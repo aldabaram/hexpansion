@@ -1,4 +1,4 @@
-class Cellule():
+class Cellule:
 
     def __init__(self, ligne, colonne):
         self.ligne = ligne
@@ -10,4 +10,3 @@ class Cellule():
         self.force = 1
         self.voisins = []
         self.list_agresseurs = [0, 0, 0, 0, 0, 0, 0]
-        

@@ -1,13 +1,22 @@
 import pygame
-import random
+import math
 from cellule import *
 
 
 class Plateau:
-    def __init__(self, screen):
+    def __init__(self, screen, h, w, options):
         self.screen = screen
+        self.height = h
+        self.width = w
+        self.nb_colonnes = options['nb_colonnes']
         self.affiche_stress = False
         self.cellules = []
+        self.nb_joueurs = options['nb_joueurs']
+        self.nb_joueurs_restant = self.nb_joueurs
+        self.bord = options['bords']  # affiche ou non les bords des hexagones
+        self.a = self.width / (3 * self.nb_colonnes)  # coté de l'hexagone
+        self.h = self.a * math.sqrt(3) / 2  # hauteur de l'hexagone
+        self.nb_lignes = int(self.height // self.h)
         self.couleurs = {
             0: (240, 240, 240),
             1: (200, 0, 0),
@@ -19,8 +28,8 @@ class Plateau:
         }
 
     def construire(self):
-        for j in range(49):
-            for i in range(28):
+        for j in range(self.nb_lignes):
+            for i in range(self.nb_colonnes):
                 c = Cellule(j, i)
                 self.cellules.append(c)
                 d = self.trouver_cellules(i - 1 + j % 2, j - 1)
@@ -51,37 +60,37 @@ class Plateau:
             else:
                 couleur = self.alt_couleur(self.couleurs[c.proprietaire], c.stress)
             espace = 0
-            dx = 15 + (45 + espace) * c.colonne + c.ligne % 2 * 22
-            dy = 15 + (13 + espace) * c.ligne
+            dx = (self.a * 3 + espace) * c.colonne + c.ligne % 2 * self.a * 1.5
+            dy = (self.h + espace) * c.ligne
             pygame.draw.polygon(
                 self.screen,
                 couleur,
                 [
-                    (15.00 + dx, 0.00 + dy),
-                    (7.50 + dx, 12.99 + dy),
-                    (-7.50 + dx, 12.99 + dy),
-                    (-15.00 + dx, 0.00 + dy),
-                    (-7.50 + dx, -12.99 + dy),
-                    (7.50 + dx, -12.99 + dy),
+                    (self.a / 2 + dx, dy),
+                    (self.a * 1.5 + dx, dy),
+                    (self.a * 2 + dx, self.h + dy),
+                    (self.a * 1.5 + dx, self.h * 2 + dy),
+                    (self.a / 2 + dx, self.h * 2 + dy),
+                    (dx, self.h + dy),
                 ],
             )
-        for c in self.cellules:
-            espace = 0
-            dx = 15 + (45 + espace) * c.colonne + c.ligne % 2 * 22
-            dy = 15 + (13 + espace) * c.ligne
-            pygame.draw.polygon(
-                self.screen,
-                (255, 255, 255),
-                [
-                    (15.00 + dx, 0.00 + dy),
-                    (7.50 + dx, 12.99 + dy),
-                    (-7.50 + dx, 12.99 + dy),
-                    (-15.00 + dx, 0.00 + dy),
-                    (-7.50 + dx, -12.99 + dy),
-                    (7.50 + dx, -12.99 + dy),
-                ],
-                width=3,
-            )
+        if self.bord:
+            for c in self.cellules:
+                dx = (self.a * 3 + espace) * c.colonne + c.ligne % 2 * self.a * 1.5
+                dy = (self.h + espace) * c.ligne
+                pygame.draw.polygon(
+                    self.screen,
+                    (255, 255, 255),
+                    [
+                        (self.a / 2 + dx, dy),
+                        (self.a * 1.5 + dx, dy),
+                        (self.a * 2 + dx, self.h + dy),
+                        (self.a * 1.5 + dx, self.h * 2 + dy),
+                        (self.a / 2 + dx, self.h * 2 + dy),
+                        (dx, self.h + dy),
+                    ],
+                    width=int(self.a / 4),
+                )
 
     def trouver_cellules(self, colonne, ligne):
         for cellule in self.cellules:
@@ -90,7 +99,9 @@ class Plateau:
 
     def propagation(self):
         # Déclaration des combat
+        joueurs = set()
         for c in self.cellules:
+            joueurs.add(c.proprietaire)
             if c.proprietaire != 0:
                 effectif = 0
                 list_cellules_ennemi = []
@@ -102,6 +113,8 @@ class Plateau:
                     c.force -= effectif
                 for v in list_cellules_ennemi:
                     v.list_agresseurs[c.proprietaire] += effectif
+        self.nb_joueurs_restant = len(joueurs)
+
         # Résolution des combats
         for c in self.cellules:
             total_force = 0
