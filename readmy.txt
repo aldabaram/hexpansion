@@ -1,0 +1,8 @@
+mode : 
+
+Attaque
+Defense
+Conquête
+Renfort
+Mobilité
+Neutre
